@@ -1,6 +1,7 @@
 require 'csv'
 require 'google/apis/civicinfo_v2'
 require 'erb'
+require 'date'
 
 #@param zipcode[String]
 def clean_zipcode(zipcode)
@@ -52,6 +53,10 @@ contents = CSV.open "event_attendees.csv", headers: true, header_converters: :sy
 template_letter = File.read "form_letter.erb"
 erb_template = ERB.new template_letter
 
+hour_array = []
+
+day_of_week_array = []
+
 contents.each do |row|
     id = row[0]
     name = row[:first_name]
@@ -63,7 +68,28 @@ contents.each do |row|
     form_letter = erb_template.result(binding)
 
     phone_number = clean_phone(row[:homephone])
-    p phone_number
+
+    # @type [String]
+    date = row[:regdate]
+    new_date = DateTime.strptime(date,'%m/%d/%Y %H:%M')
+    hour_array.push new_date.hour
+    day_of_week_array.push new_date.wday
 
     save_thank_you_letter(id,form_letter)
 end
+
+counts = Hash.new 0
+hour_array.each do |hour|
+    counts[hour] += 1
+end
+
+puts "Best hour #{counts.max_by{|k,v| v}}"
+
+day = Hash.new 0
+day_of_week_array.each do |hour|
+    day[hour] += 1
+end
+
+p day
+
+puts "Best day of the week #{day.max_by{|k,v| v}}"
